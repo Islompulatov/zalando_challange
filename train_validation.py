@@ -14,9 +14,9 @@ torch.manual_seed(42)
 trainloader, testloader = load_data('./data')
 
 # TRAINING AND VALIDATION
-learning_rate = 0.01
+learning_rate = 0.001
 epochs = 30
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(neuralnet.parameters(), lr=learning_rate)
 
 train_losses = []
