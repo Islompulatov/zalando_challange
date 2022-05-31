@@ -5,35 +5,24 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 import torch.nn as nn
 import torch.optim as optim
-from model import neuralnet  # change this to load the model
-# import data
+from model_theo import neuralnet
+from data_handler import load_data
+
 torch.manual_seed(42)
 
-# 1. DATA
-
-transform = transforms.Compose([transforms.ToTensor(),
-                                transforms.Normalize((0.5,), (0.5,))])
-# Download and load the training data
-trainset = datasets.FashionMNIST(
-    '~/.pytorch/F_MNIST_data/', download=True, train=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=64, shuffle=True)
-
-# Download and load the test data
-testset = datasets.FashionMNIST(
-    '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-
+# Data
+trainloader, testloader = load_data('./data')
 
 # TRAINING AND VALIDATION
 learning_rate = 0.01
-epochs = 50
+epochs = 30
 criterion = nn.NLLLoss()
 optimizer = optim.Adam(neuralnet.parameters(), lr=learning_rate)
 
 train_losses = []
 test_losses = []
 accuracies = []
+benchmark_accuracy = 0.85
 for epoch in tqdm(range(epochs)):
 
     running_loss = 0
@@ -84,6 +73,15 @@ for epoch in tqdm(range(epochs)):
         # mean loss for each epoch
         test_losses.append(running_loss/len(testloader))
 
+        # saving best model
+        # is current mean score (mean per epoch) greater than or equal to the benchmark?
+        if accuracies[-1] > benchmark_accuracy:
+            # save model
+            torch.save(neuralnet.state_dict(), 'model.pth')
+
+            # update benckmark
+            benchmark_accuracy = accuracies[-1]
+
     neuralnet.train()
 
 
@@ -100,6 +98,8 @@ plt.legend()
 plt.subplot(1, 2, 2)
 plt.plot(x_epochs, accuracies, marker='o',
          c='red', label='test_accuracy')
+plt.axhline(benchmark_accuracy, c='grey', ls='--',
+            label=f'benchmark_score({benchmark_accuracy :.2f})')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.legend()
