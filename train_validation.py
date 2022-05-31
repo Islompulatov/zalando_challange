@@ -1,11 +1,12 @@
 from torchvision import datasets, transforms
 import torch
-# import tqdm
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 import torch.nn as nn
 import torch.optim as optim
 # import data
+# from test_model import model_class
 import data_handler as dh
 from model_train import model_check
 torch.manual_seed(42)
@@ -25,17 +26,17 @@ trainloader, testloader = dh.load_data("~/.pytorch/F_MNIST_data/")
 #     '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
 # testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
-model = model_check(784, 128, 64, 10)
+model = model_check(784, 400, 200, 100, 10)
 # TRAINING AND VALIDATION
-learning_rate = 0.01
-epochs = 50
-criterion = nn.NLLLoss()
+learning_rate = 0.001
+epochs = 20
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # image, label = next(iter(trainloader))
 train_losses = []
 test_losses = []
 accuracies = []
-for epoch in range(epochs):
+for epoch in tqdm(range(epochs)):
 
     running_loss = 0
     # training
