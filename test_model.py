@@ -23,4 +23,4 @@ class ImageClassificationBase(nn.Module):
         return output
 
 
-model_class = ImageClassificationBase()      
+model_class = ImageClassificationBase(784, 128, 64, 10)      

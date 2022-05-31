@@ -1,40 +1,41 @@
 from torchvision import datasets, transforms
 import torch
-from tqdm import tqdm
+# import tqdm
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 import torch.nn as nn
 import torch.optim as optim
-from model import neuralnet  # change this to load the model
 # import data
+import data_handler as dh
+from model_train import model_check
 torch.manual_seed(42)
 
 # 1. DATA
+trainloader, testloader = dh.load_data("~/.pytorch/F_MNIST_data/")
+# transform = transforms.Compose([transforms.ToTensor(),
+#                                 transforms.Normalize((0.5,), (0.5,))])
+# # Download and load the training data
+# trainset = datasets.FashionMNIST(
+#     '~/.pytorch/F_MNIST_data/', download=True, train=True, transform=transform)
+# trainloader = torch.utils.data.DataLoader(
+#     trainset, batch_size=64, shuffle=True)
 
-transform = transforms.Compose([transforms.ToTensor(),
-                                transforms.Normalize((0.5,), (0.5,))])
-# Download and load the training data
-trainset = datasets.FashionMNIST(
-    '~/.pytorch/F_MNIST_data/', download=True, train=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=64, shuffle=True)
+# # Download and load the test data
+# testset = datasets.FashionMNIST(
+#     '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
+# testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
-# Download and load the test data
-testset = datasets.FashionMNIST(
-    '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-
-
+model = model_check(784, 128, 64, 10)
 # TRAINING AND VALIDATION
 learning_rate = 0.01
 epochs = 50
 criterion = nn.NLLLoss()
-optimizer = optim.Adam(neuralnet.parameters(), lr=learning_rate)
-
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+# image, label = next(iter(trainloader))
 train_losses = []
 test_losses = []
 accuracies = []
-for epoch in tqdm(range(epochs)):
+for epoch in range(epochs):
 
     running_loss = 0
     # training
@@ -42,7 +43,7 @@ for epoch in tqdm(range(epochs)):
 
         optimizer.zero_grad()
         # forward pass
-        logits = neuralnet(x_train_batch.view(x_train_batch.shape[0], -1))
+        logits = model(x_train_batch.view(x_train_batch.shape[0], -1))
 
         # loss
         train_loss = criterion(logits, y_train_batch)
@@ -57,7 +58,7 @@ for epoch in tqdm(range(epochs)):
     train_losses.append(running_loss/len(trainloader))
 
     # validation
-    neuralnet.eval()
+    model.eval()
     with torch.no_grad():
         running_accuracy = 0
         running_loss = 0
@@ -65,7 +66,7 @@ for epoch in tqdm(range(epochs)):
         for x_test_batch, y_test_batch in testloader:
 
             # logits
-            test_logits = neuralnet(
+            test_logits = model(
                 x_test_batch.view(x_test_batch.shape[0], -1))
 
             # predictions
@@ -84,7 +85,7 @@ for epoch in tqdm(range(epochs)):
         # mean loss for each epoch
         test_losses.append(running_loss/len(testloader))
 
-    neuralnet.train()
+    model.train()
 
 
 # Plots
