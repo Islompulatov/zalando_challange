@@ -5,37 +5,24 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 import torch.nn as nn
 import torch.optim as optim
-# import data
-# from test_model import model_class
-import data_handler as dh
-from model_train import model_check
+from model_theo import neuralnet
+from data_handler import load_data
+
 torch.manual_seed(42)
 
-# 1. DATA
-trainloader, testloader = dh.load_data("~/.pytorch/F_MNIST_data/")
-# transform = transforms.Compose([transforms.ToTensor(),
-#                                 transforms.Normalize((0.5,), (0.5,))])
-# # Download and load the training data
-# trainset = datasets.FashionMNIST(
-#     '~/.pytorch/F_MNIST_data/', download=True, train=True, transform=transform)
-# trainloader = torch.utils.data.DataLoader(
-#     trainset, batch_size=64, shuffle=True)
+# Data
+trainloader, testloader = load_data('./data')
 
-# # Download and load the test data
-# testset = datasets.FashionMNIST(
-#     '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
-# testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-
-model = model_check(784, 400, 200, 100, 10)
 # TRAINING AND VALIDATION
 learning_rate = 0.001
-epochs = 20
+epochs = 30
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-# image, label = next(iter(trainloader))
+optimizer = optim.Adam(neuralnet.parameters(), lr=learning_rate)
+
 train_losses = []
 test_losses = []
 accuracies = []
+benchmark_accuracy = 0.85
 for epoch in tqdm(range(epochs)):
 
     running_loss = 0
@@ -44,7 +31,7 @@ for epoch in tqdm(range(epochs)):
 
         optimizer.zero_grad()
         # forward pass
-        logits = model(x_train_batch.view(x_train_batch.shape[0], -1))
+        logits = neuralnet(x_train_batch.view(x_train_batch.shape[0], -1))
 
         # loss
         train_loss = criterion(logits, y_train_batch)
@@ -59,7 +46,7 @@ for epoch in tqdm(range(epochs)):
     train_losses.append(running_loss/len(trainloader))
 
     # validation
-    model.eval()
+    neuralnet.eval()
     with torch.no_grad():
         running_accuracy = 0
         running_loss = 0
@@ -67,7 +54,7 @@ for epoch in tqdm(range(epochs)):
         for x_test_batch, y_test_batch in testloader:
 
             # logits
-            test_logits = model(
+            test_logits = neuralnet(
                 x_test_batch.view(x_test_batch.shape[0], -1))
 
             # predictions
@@ -86,7 +73,16 @@ for epoch in tqdm(range(epochs)):
         # mean loss for each epoch
         test_losses.append(running_loss/len(testloader))
 
-    model.train()
+        # saving best model
+        # is current mean score (mean per epoch) greater than or equal to the benchmark?
+        if accuracies[-1] > benchmark_accuracy:
+            # save model
+            torch.save(neuralnet.state_dict(), 'model.pth')
+
+            # update benckmark
+            benchmark_accuracy = accuracies[-1]
+
+    neuralnet.train()
 
 
 # Plots
@@ -102,6 +98,8 @@ plt.legend()
 plt.subplot(1, 2, 2)
 plt.plot(x_epochs, accuracies, marker='o',
          c='red', label='test_accuracy')
+plt.axhline(benchmark_accuracy, c='grey', ls='--',
+            label=f'benchmark_score({benchmark_accuracy :.2f})')
 plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.legend()
