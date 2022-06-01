@@ -13,9 +13,7 @@ def model_check(input_size, hidden_layer1, hidden_layer2, output_size):
                           nn.Linear(hidden_layer1, hidden_layer2),
                           nn.ReLU(),
                           nn.Linear(hidden_layer2, output_size),
-                
-    
-                          nn.ReLU(),
+        
                           nn.Softmax(dim=1))
 
     return model

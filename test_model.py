@@ -1,26 +1,121 @@
+from torchvision import datasets, transforms
 import torch
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.optim as optim
+# import data
+# from test_model import model_class
+import data_handler as dh
+from model_train import model_check
+torch.manual_seed(42)
 
-class ImageClassificationBase(nn.Module):
-    def __init__(self,input_size, hidden_layer1, hidden_layer2, output_size):
-        super(ImageClassificationBase, self).__init__()
+var1 = torch.FloatTensor([1.0, 2.0, 3.0])
+var1.device
+# 1. DATA
+trainloader, testloader = dh.load_data("~/.pytorch/F_MNIST_data/")
+# transform = transforms.Compose([transforms.ToTensor(),
+#                                 transforms.Normalize((0.5,), (0.5,))])
+# # Download and load the training data
+# trainset = datasets.FashionMNIST(
+#     '~/.pytorch/F_MNIST_data/', download=True, train=True, transform=transform)
+# trainloader = torch.utils.data.DataLoader(
+#     trainset, batch_size=64, shuffle=True)
 
-        self.fc1 = nn.Linear(input_size, hidden_layer1)
-        self.fc2 = nn.Linear(hidden_layer1, hidden_layer2)
-        self.fc3 = nn.Linear(hidden_layer2, output_size)
-        self.relu = nn.ReLU()
-        self.softmax = nn.Softmax(dim=1)
-    
+# # Download and load the test data
+# testset = datasets.FashionMNIST(
+#     '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
+# testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
-    def forward(self, x):
-        layer1 = self.fc1(x)
-        act1 = self.relu(layer1)
-        layer2 = self.fc2(act1)
-        act2 = self.relu(layer2)
-        layer3 = self.fc3(act2)
-        output = self.softmax(layer3)
-        return output
+model = model_check(784, 400, 200, 10) 
+# TRAINING AND VALIDATION
+learning_rate = 0.001
+epochs = 20
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+# next(model.parameters()).cuda()
+
+# image, label = next(iter(trainloader))
+train_losses = []
+test_losses = []
+accuracies = []
+for epoch in tqdm(range(epochs)):
+
+    running_loss = 0
+    # training
+    for x_train_batch, y_train_batch in trainloader:
+
+        # x_train_batch = torch.FloatTensor(x_train_batch).cuda()
+        # y_train_batch = torch.LongTensor(y_train_batch).cuda()
+
+        optimizer.zero_grad()
+        # forward pass
+        logits = model(x_train_batch.view(x_train_batch.shape[0], -1))
+
+        # loss
+        train_loss = criterion(logits, y_train_batch)
+        running_loss += train_loss.item()
+
+        # backward pass
+        train_loss.backward()
+
+        optimizer.step()
+
+    # mean loss (all batches losses divided by the total number of batches)
+    train_losses.append(running_loss/len(trainloader))
+
+    # validation
+    model.eval()
+    with torch.no_grad():
+        running_accuracy = 0
+        running_loss = 0
+
+        for x_test_batch, y_test_batch in testloader:
+
+            # x_test_batch = torch.FloatTensor(x_test_batch).cuda()
+            # y_test_batch = torch.LongTensor(y_test_batch).cuda() 
+
+            # logits
+            test_logits = model(
+            x_test_batch.view(x_test_batch.shape[0], -1))
+
+            # predictions
+            test_preds = torch.argmax(test_logits, dim=1)
+
+            # running accuracy
+            running_accuracy += accuracy_score(y_test_batch, test_preds)
+
+            # loss
+            test_loss = criterion(test_logits, y_test_batch)
+            running_loss += test_loss.item()
+
+        # mean accuracy for each epoch
+        accuracies.append(running_accuracy/len(testloader))
+
+        # mean loss for each epoch
+        test_losses.append(running_loss/len(testloader))
+
+    model.train()
 
 
-model_class = ImageClassificationBase(784, 400, 200, 10)      
+# Plots
+x_epochs = list(range(epochs))
+plt.figure(figsize=(15, 6))
+plt.subplot(1, 2, 1)
+plt.plot(x_epochs, train_losses, marker='o', label='train')
+plt.plot(x_epochs, test_losses, marker='o', label='test')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(x_epochs, accuracies, marker='o',
+         c='red', label='test_accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.show()
+
+     

@@ -26,7 +26,7 @@ trainloader, testloader = dh.load_data("~/.pytorch/F_MNIST_data/")
 #     '~/.pytorch/F_MNIST_data/', download=True, train=False, transform=transform)
 # testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
-model = model_check(784, 400, 200, 10)
+model = model_check(784, 400, 200, 10).cuda()
 # TRAINING AND VALIDATION
 learning_rate = 0.001
 epochs = 20
